@@ -40,6 +40,26 @@ var initHttpServer = () => {
         res.setHeader('Content-Type', 'application/json');
         res.send(JSON.stringify(blockchain));
     });
+    app.get('/validate', (req, res) => {
+        console.log("lets validate this");
+        var status = false;
+        if(req.query.index){
+            for (var i = 0; i < blockchain.length; i++) {
+                    // console.log(blockchain[i]);
+                if(blockchain[i].index == req.query.index){
+                    console.log("found it");
+                    console.log(blockchain[i]);
+                    
+                     status = calculateHashForBlock(blockchain[i]) === blockchain[i].hash;
+                    break;
+                }else{
+                    console.log("not " +blockchain[i].index);
+                }
+            }
+        }
+            res.send(JSON.stringify({status:status}));
+
+    });
     app.post('/mineBlock', (req, res) => {
         var newBlock = generateNextBlock(req.body.data);
         addBlock(newBlock);
