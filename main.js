@@ -40,24 +40,30 @@ var initHttpServer = () => {
         res.setHeader('Content-Type', 'application/json');
         res.send(JSON.stringify(blockchain));
     });
+    app.get('/manipulate', (req, res) => {
+        blockchain[req.query.index].data = "everything to peter";
+        var newHashAndNonce = calculateHashAndNonceForBlock(blockchain[req.query.index]);
+        blockchain[req.query.index].hash = newHashAndNonce.hash;
+        blockchain[req.query.index].nonce = newHashAndNonce.nonce;
+        res.send();
+    });
     app.get('/validate', (req, res) => {
-        console.log("lets validate this");
         var status = false;
+        var foundInitial = false;
         if(req.query.index){
-            for (var i = 0; i < blockchain.length; i++) {
-                    // console.log(blockchain[i]);
-                if(blockchain[i].index == req.query.index){
-                    console.log("found it");
-                    console.log(blockchain[i]);
-                    
-                     status = calculateHashForBlock(blockchain[i]) === blockchain[i].hash;
-                    break;
-                }else{
-                    console.log("not " +blockchain[i].index);
-                }
+            for (var i = blockchain.length - 1; i >= 0; i--) {
+              if(blockchain[i].index == req.query.index || foundInitial){
+                    status = calculateHashForBlock(blockchain[i]) === blockchain[i].hash && (i === 0 || blockchain[i].previousHash == blockchain[i-1].hash);
+                    if(status){
+                        foundInitial = true;
+                    }else if(foundInitial){
+                        status = "error on block with index "+blockchain[i].index;
+                        break;   
+                    }
+                 }
             }
         }
-            res.send(JSON.stringify({status:status}));
+        res.send(JSON.stringify({status:status}));
 
     });
     app.post('/mineBlock', (req, res) => {
@@ -132,7 +138,10 @@ var generateNextBlock = (blockData) => {
 
 
 var calculateHashForBlock = (block) => {
-    return calculateHash(block.index, block.previousHash, block.timestamp, block.data, block.nonce).hash;
+    return calculateHashAndNonceForBlock(block).hash;
+};
+var calculateHashAndNonceForBlock = (block) => {
+    return calculateHash(block.index, block.previousHash, block.timestamp, block.data, block.nonce);
 };
 
 var calculateHash = (index, previousHash, timestamp, data, nonce) => {
