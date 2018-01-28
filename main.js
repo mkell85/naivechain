@@ -3,6 +3,7 @@ var CryptoJS = require('crypto-js')
 var express = require('express')
 var bodyParser = require('body-parser')
 var WebSocket = require('ws')
+var lodash = require('lodash')
 
 var httpPort = process.env.HTTP_PORT || 3001
 var p2pPort = process.env.P2P_PORT || 6001
@@ -75,9 +76,9 @@ var initHttpServer = () => {
   app.get('/peers', (req, res) => {
     res.send(sockets.map(s => s._socket.remoteAddress + ':' + s._socket.remotePort))
   })
-  app.get('/generateStatus', (req, res) => {
+  app.get('/generateBlocks', (req, res) => {
     setInterval(function () {
-      var newBlock = generateNextBlock('{"data":"Health Status 100%"')
+      var newBlock = generateNextBlock('{"data":"Health Status 100%"}')
       addBlock(newBlock)
       broadcast(responseLatestMsg())
     }, 10000)
@@ -151,9 +152,9 @@ var calculateHash = (index, previousHash, timestamp, data, nonce) => {
     return {hash: CryptoJS.SHA256(index + previousHash + timestamp + data + nonce).toString(), nonce: nonce}
   }
   while (true) {
-    nonce = Math.floor(Math.random() * 899999) + 100000
+    nonce = Math.floor(Math.random() * 899999) + 1000000
     var hash = CryptoJS.SHA256(index + previousHash + timestamp + data + nonce).toString()
-    if (hash.toString().startsWith('000')) {
+    if (hash.toString().startsWith('0000')) {
       return {hash: hash, nonce: nonce}
     }
   }
